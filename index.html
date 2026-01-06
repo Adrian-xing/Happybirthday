@@ -7,8 +7,8 @@
   <style>
     :root { --card: rgba(255,255,255,.10); }
     body{
-      margin:0; 
-      min-height:100vh; 
+      margin:0;
+      min-height:100vh;
       color:#fff;
       font-family: system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
       background:
@@ -18,12 +18,12 @@
       overflow-y:auto;
       -webkit-overflow-scrolling: touch;
     }
-    .wrap{ 
-      position:relative; 
-      z-index:2; 
-      padding:22px 16px 34px; 
-      max-width:560px; 
-      margin:0 auto; 
+    .wrap{
+      position:relative;
+      z-index:2;
+      padding:22px 16px 34px;
+      max-width:560px;
+      margin:0 auto;
       min-height:100vh;
     }
     .card{
@@ -37,16 +37,10 @@
       backdrop-filter: blur(10px);
     }
     h1{ margin:0 0 10px; font-size: 30px; letter-spacing:.4px; }
-    p{ margin:10px 0; line-height:1.78; font-size:16px; opacity:.96; white-space:pre-line;}
+    p{ margin:10px 0; line-height:1.78; font-size:16px; opacity:.96; white-space:pre-line; }
     .name{ font-weight:800; }
-    .btns{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; }
-    button{
-      border:0; padding:12px 14px; border-radius:14px; color:#fff; font-size:15px;
-      background: rgba(255,255,255,.16); cursor:pointer;
-    }
-    button.primary{ background: rgba(255,255,255,.28); }
-    .hint{ margin-top:12px; opacity:.85; font-size:14px; }
-    .small{ font-size:12px; opacity:.78; margin-top:10px; white-space:pre-line;}
+    .hint{ margin-top:12px; opacity:.88; font-size:14px; }
+    .small{ font-size:12px; opacity:.78; margin-top:10px; white-space:pre-line; }
     canvas{ position:fixed; inset:0; z-index:1; }
   </style>
 </head>
@@ -61,12 +55,7 @@
     <p id="msg"></p>
     <p id="sign" class="small"></p>
 
-    <div class="btns">
-      <button class="primary" id="boom">点我收下专属烟花 ✨</button>
-      <button id="copy">复制祝福（收藏/发朋友圈）</button>
-    </div>
-
-    <div class="hint">（悄悄说：页面可以上下滑哦 ❤️）</div>
+    <div class="hint">（乖宝宝慢慢看，烟花会一直为你放 ✨）</div>
     <div class="small" style="margin-top:14px; opacity:.7;">
       这是主人留给乖宝宝的，只给你一个人看
     </div>
@@ -74,6 +63,7 @@
 </div>
 
 <script>
+  // ===== 专属文案（乖 + 粘）=====
   const TEXT =
 `宝宝，生日快乐 🎂
 
@@ -108,30 +98,36 @@
   document.getElementById("msg").textContent = TEXT;
   document.getElementById("sign").textContent = SIGN;
 
+  // ===== 持续烟花（自动放 + 点哪炸哪）=====
   const canvas = document.getElementById("c");
   const ctx = canvas.getContext("2d");
   let W, H, particles = [];
+  const MAX_PARTICLES = 2200; // 防止手机卡顿
 
   function resize(){ W = canvas.width = innerWidth; H = canvas.height = innerHeight; }
   addEventListener("resize", resize); resize();
 
-  function burst(x, y) {
+  function burst(x, y, intensity=1) {
     const layers = 2;
     for (let l = 0; l < layers; l++) {
-      const n = 220;
+      const n = Math.floor((160 + Math.random()*120) * intensity);
       for (let i = 0; i < n; i++) {
         const ang = Math.random() * Math.PI * 2;
-        const spd = 2 + Math.random() * (6 + l * 2);
+        const spd = (2 + Math.random() * (6 + l * 2)) * (0.9 + 0.3*intensity);
         particles.push({
           x, y,
           vx: Math.cos(ang) * spd,
           vy: Math.sin(ang) * spd,
-          life: 70 + Math.random() * 60,
-          r: 1.5 + Math.random() * 2.5,
+          life: 65 + Math.random() * 70,
+          r: 1.3 + Math.random() * 2.6,
           hue: Math.random() * 360,
           alpha: 1
         });
       }
+    }
+    // 兜底裁剪，避免粒子无限增长
+    if (particles.length > MAX_PARTICLES) {
+      particles.splice(0, particles.length - MAX_PARTICLES);
     }
   }
 
@@ -143,7 +139,7 @@
       p.x += p.vx;
       p.y += p.vy;
       p.life -= 1;
-      p.alpha = Math.max(p.life / 130, 0);
+      p.alpha = Math.max(p.life / 140, 0);
 
       ctx.beginPath();
       ctx.fillStyle = `hsla(${p.hue}, 100%, 75%, ${p.alpha})`;
@@ -156,35 +152,30 @@
   }
   tick();
 
-  document.getElementById("boom").onclick = () => {
-    burst(W*0.25, H*0.46);
-    setTimeout(()=>burst(W*0.5, H*0.34), 170);
-    setTimeout(()=>burst(W*0.75, H*0.46), 340);
-    setTimeout(()=>burst(W*0.5, H*0.24), 520);
-  };
-
-  canvas.addEventListener("click", (e)=> burst(e.clientX, e.clientY));
-
-  document.getElementById("copy").onclick = async () => {
-    const t = `宝宝生日快乐🎂
-
-${TEXT}
-
-${SIGN}`;
-    try { await navigator.clipboard.writeText(t); alert("已复制～给主人抱抱"); }
-    catch { alert("复制失败：你可以长按手动复制页面文字"); }
-  };
-
-  let firstView = true;
+  // 第一次打开：更有仪式感的“连环烟花”
   setTimeout(() => {
-    if (firstView) {
-      burst(W * 0.5, H * 0.35);
-      setTimeout(() => burst(W * 0.3, H * 0.45), 180);
-      setTimeout(() => burst(W * 0.7, H * 0.45), 360);
-      setTimeout(() => burst(W * 0.5, H * 0.25), 520);
-      firstView = false;
-    }
-  }, 600);
+    burst(W * 0.5, H * 0.35, 1.2);
+    setTimeout(() => burst(W * 0.3, H * 0.45, 1.1), 180);
+    setTimeout(() => burst(W * 0.7, H * 0.45, 1.1), 360);
+    setTimeout(() => burst(W * 0.5, H * 0.25, 1.2), 520);
+  }, 650);
+
+  // 持续自动放烟花：随机位置、节奏柔和
+  // 手机上避免太频繁：默认每 900ms 一次，小概率更大一朵
+  setInterval(() => {
+    const x = W * (0.15 + Math.random() * 0.70);
+    const y = H * (0.18 + Math.random() * 0.42);
+    const big = Math.random() < 0.22; // 22% 概率更大
+    burst(x, y, big ? 1.25 : 0.95);
+  }, 900);
+
+  // 点哪炸哪（兼容触摸）
+  function explodeAtEvent(e){
+    const t = (e.touches && e.touches[0]) ? e.touches[0] : e;
+    burst(t.clientX, t.clientY, 1.15);
+  }
+  canvas.addEventListener("click", explodeAtEvent);
+  canvas.addEventListener("touchstart", (e)=>{ explodeAtEvent(e); }, {passive:true});
 </script>
 </body>
 </html>
